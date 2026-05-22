@@ -1,0 +1,303 @@
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <string>
+
+using namespace std;
+
+class Student {
+private:
+    int roll;
+    string name;
+    float marks;
+
+public:
+    void input() {
+        cout << "\nEnter Roll Number: ";
+        cin >> roll;
+        cin.ignore();
+
+        cout << "Enter Name: ";
+        getline(cin, name);
+
+        do {
+            cout << "Enter Marks (0 - 100): ";
+            cin >> marks;
+
+            if (marks < 0 || marks > 100) {
+                cout << "Invalid marks! Please enter between 0 and 100.\n";
+            }
+
+        } while (marks < 0 || marks > 100);
+    }
+
+    
+    void display() const {
+        cout << left << setw(15) << roll
+             << setw(25) << name
+             << setw(10) << marks << endl;
+    }
+
+    int getRoll() const {
+        return roll;
+    }
+
+    
+    void writeToFile(ofstream &outFile) const {
+        outFile << roll << endl;
+        outFile << name << endl;
+        outFile << marks << endl;
+    }
+
+    
+    bool readFromFile(ifstream &inFile) {
+        if (!(inFile >> roll))
+            return false;
+
+        inFile.ignore();
+        getline(inFile, name);
+        inFile >> marks;
+        inFile.ignore();
+
+        return true;
+    }
+};
+
+bool isDuplicateRoll(int rollNo) {
+    Student s;
+    ifstream file("students.txt");
+
+    while (s.readFromFile(file)) {
+        if (s.getRoll() == rollNo) {
+            file.close();
+            return true;
+        }
+    }
+
+    file.close();
+    return false;
+}
+
+void addStudent() {
+    Student s;
+
+    cout << "\n===== ADD STUDENT =====\n";
+
+    s.input();
+
+    // Duplicate roll number check
+    if (isDuplicateRoll(s.getRoll())) {
+        cout << "\nRoll Number already exists!\n";
+        return;
+    }
+
+    ofstream file("students.txt", ios::app);
+
+    s.writeToFile(file);
+
+    file.close();
+
+    cout << "\nStudent Record Added Successfully!\n";
+}
+
+void displayStudents() {
+    Student s;
+    ifstream file("students.txt");
+
+    cout << "\n===== STUDENT RECORDS =====\n";
+
+    if (!file) {
+        cout << "\nNo records found!\n";
+        return;
+    }
+
+    cout << left << setw(15) << "Roll No"
+         << setw(25) << "Name"
+         << setw(10) << "Marks" << endl;
+
+    cout << "--------------------------------------------------\n";
+
+    while (s.readFromFile(file)) {
+        s.display();
+    }
+
+    file.close();
+}
+
+void searchStudent() {
+    int rollNo;
+    bool found = false;
+    Student s;
+
+    cout << "\nEnter Roll Number to Search: ";
+    cin >> rollNo;
+
+    ifstream file("students.txt");
+
+    while (s.readFromFile(file)) {
+        if (s.getRoll() == rollNo) {
+
+            cout << "\n===== STUDENT FOUND =====\n";
+
+            cout << left << setw(15) << "Roll No"
+                 << setw(25) << "Name"
+                 << setw(10) << "Marks" << endl;
+
+            cout << "--------------------------------------------------\n";
+
+            s.display();
+
+            found = true;
+            break;
+        }
+    }
+
+    file.close();
+
+    if (!found) {
+        cout << "\nStudent Record Not Found!\n";
+    }
+}
+
+void updateStudent() {
+    int rollNo;
+    bool found = false;
+
+    Student s;
+
+    cout << "\nEnter Roll Number to Update: ";
+    cin >> rollNo;
+
+    ifstream file("students.txt");
+    ofstream temp("temp.txt");
+
+    while (s.readFromFile(file)) {
+
+        if (s.getRoll() == rollNo) {
+
+            cout << "\nEnter New Student Details:\n";
+
+            Student newStudent;
+            newStudent.input();
+
+            // Prevent duplicate roll number during update
+            if (newStudent.getRoll() != rollNo &&
+                isDuplicateRoll(newStudent.getRoll())) {
+
+                cout << "\nNew Roll Number already exists!\n";
+
+                temp.close();
+                file.close();
+
+                remove("temp.txt");
+
+                return;
+            }
+
+            newStudent.writeToFile(temp);
+
+            found = true;
+        }
+        else {
+            s.writeToFile(temp);
+        }
+    }
+
+    file.close();
+    temp.close();
+
+    remove("students.txt");
+    rename("temp.txt", "students.txt");
+
+    if (found)
+        cout << "\nStudent Record Updated Successfully!\n";
+    else
+        cout << "\nStudent Record Not Found!\n";
+}
+
+void deleteStudent() {
+    int rollNo;
+    bool found = false;
+
+    Student s;
+
+    cout << "\nEnter Roll Number to Delete: ";
+    cin >> rollNo;
+
+    ifstream file("students.txt");
+    ofstream temp("temp.txt");
+
+    while (s.readFromFile(file)) {
+
+        if (s.getRoll() == rollNo) {
+            found = true;
+        }
+        else {
+            s.writeToFile(temp);
+        }
+    }
+
+    file.close();
+    temp.close();
+
+    remove("students.txt");
+    rename("temp.txt", "students.txt");
+
+    if (found)
+        cout << "\nStudent Record Deleted Successfully!\n";
+    else
+        cout << "\nStudent Record Not Found!\n";
+}
+
+int main() {
+
+    int choice;
+
+    do {
+
+        cout << "\n\n========== STUDENT MANAGEMENT SYSTEM ==========\n";
+
+        cout << "1. Add Student\n";
+        cout << "2. Display All Students\n";
+        cout << "3. Search Student\n";
+        cout << "4. Update Student\n";
+        cout << "5. Delete Student\n";
+        cout << "6. Exit\n";
+
+        cout << "\nEnter Your Choice: ";
+        cin >> choice;
+
+        switch (choice) {
+
+        case 1:
+            addStudent();
+            break;
+
+        case 2:
+            displayStudents();
+            break;
+
+        case 3:
+            searchStudent();
+            break;
+
+        case 4:
+            updateStudent();
+            break;
+
+        case 5:
+            deleteStudent();
+            break;
+
+        case 6:
+            cout << "\nThank You! Exiting Program...\n";
+            break;
+
+        default:
+            cout << "\nInvalid Choice! Please Try Again.\n";
+        }
+
+    } while (choice != 6);
+
+    return 0;
+}
